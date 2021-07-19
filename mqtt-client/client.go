@@ -14,7 +14,6 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 	val := string(msg.Payload())
 	log.Println(val)
 	if val == "1" {
-		log.Println("bot stuff")
 		reader := helpers.TakePicture()
 		bts, err := ioutil.ReadAll(reader)
 		if err != nil {
