@@ -47,7 +47,3 @@ func (c *Command) turnOffAlarm() {
 	c.mqttGuardClient.Publish("alarm/switch", 0, true, "0")
 	c.Bot.Send(tgbotapi.NewMessage(c.cfg.ChatID, "Alarm is OFF!"))
 }
-
-func (c *Command) ping() {
-	c.Bot.Send(tgbotapi.NewMessage(c.cfg.ChatID, "Pong!"))
-}

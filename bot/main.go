@@ -12,7 +12,6 @@ const (
 	Picture      = "picture"
 	TurnOnAlarm  = "alarm_on"
 	TurnOffAlarm = "alarm_off"
-	Ping         = "ping"
 )
 
 func InitBot() (*tgbotapi.BotAPI, tgbotapi.UpdatesChannel) {
@@ -68,9 +67,6 @@ func RunBot(client mqtt.Client) {
 				break
 			case TurnOffAlarm:
 				c.turnOffAlarm()
-				break
-			case Ping:
-				c.ping()
 				break
 			}
 		}
