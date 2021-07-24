@@ -4,7 +4,6 @@ import (
 	log "github.com/pion/ion-log"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"sync"
 )
 
 type Config struct {
@@ -14,13 +13,10 @@ type Config struct {
 
 var (
 	config *Config
-	lock = &sync.Mutex{}
 )
 
 func GetConfig() *Config {
 	if config == nil {
-		lock.Lock()
-		defer lock.Unlock()
 		data, err := ioutil.ReadFile("config.yaml")
 		if err != nil {
 			panic(err)

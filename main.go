@@ -2,10 +2,26 @@ package main
 
 import (
 	"MaximusWarden/MaximusGuard/bot"
-	mqtt_client "MaximusWarden/MaximusGuard/mqtt-client"
+	"MaximusWarden/MaximusGuard/queue"
+	"log"
 )
 
 func main() {
-	client := mqtt_client.Run()
-	bot.RunBot(client)
+	queueClient := queue.MqttClient{}
+	botClient := bot.TGBot{}
+
+	queueClient.New()
+	err := botClient.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+
+
+	botClient.ServeChannel()
+	queueClient.ServeChannel()
+
+
+	queueClient.Run()
+	botClient.Run()
 }

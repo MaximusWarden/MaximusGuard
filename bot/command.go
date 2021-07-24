@@ -2,8 +2,8 @@ package bot
 
 import (
 	"MaximusWarden/MaximusGuard/config"
-	"MaximusWarden/MaximusGuard/helpers"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"MaximusWarden/MaximusGuard/devices"
+	"MaximusWarden/MaximusGuard/queue"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"io/ioutil"
 	"log"
@@ -12,13 +12,13 @@ import (
 type Command struct {
 	Bot             *tgbotapi.BotAPI
 	Update          tgbotapi.Update
-	mqttGuardClient mqtt.Client
 	cfg             *config.Config
 }
 
 func (c *Command) takePicture() {
 	log.Println("Done")
-	reader := helpers.TakePicture()
+	camera := devices.Camera{}
+	reader := camera.TakePicture()
 	bts, err := ioutil.ReadAll(reader)
 	if err != nil {
 		log.Println("Error while casting bytes")
@@ -39,11 +39,11 @@ func (c *Command) takePicture() {
 }
 
 func (c *Command) turnOnAlarm() {
-	c.mqttGuardClient.Publish("alarm/switch", 0, true, "1")
+	queue.EventCh <- queue.AlarmON
 	c.Bot.Send(tgbotapi.NewMessage(c.cfg.ChatID, "Alarm is ON!"))
 }
 
 func (c *Command) turnOffAlarm() {
-	c.mqttGuardClient.Publish("alarm/switch", 0, true, "0")
+	queue.EventCh <- queue.AlarmOFF
 	c.Bot.Send(tgbotapi.NewMessage(c.cfg.ChatID, "Alarm is OFF!"))
 }

@@ -1,4 +1,4 @@
-package helpers
+package devices
 
 import (
 	"bufio"
@@ -10,7 +10,9 @@ import (
 	"os"
 )
 
-func TakePicture() io.Reader {
+type Camera struct{}
+
+func (c *Camera) TakePicture() io.Reader {
 	var buffer bytes.Buffer
 	writer := bufio.NewWriter(&buffer)
 	reader := bufio.NewReader(&buffer)
