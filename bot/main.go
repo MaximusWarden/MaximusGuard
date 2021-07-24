@@ -2,8 +2,7 @@ package bot
 
 import (
 	"MaximusWarden/MaximusGuard/config"
-	mqtt_client "MaximusWarden/MaximusGuard/mqtt-client"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 )
@@ -14,61 +13,74 @@ const (
 	TurnOffAlarm = "alarm_off"
 )
 
-func InitBot() (*tgbotapi.BotAPI, tgbotapi.UpdatesChannel) {
+var EventCh = make(chan string)
+
+type TGBot struct {
+	bot *tgbotapi.BotAPI
+	updates tgbotapi.UpdatesChannel
+}
+
+func (t *TGBot) New() error {
 	cfg := config.GetConfig()
 	bot, err := tgbotapi.NewBotAPI(cfg.TGBotToken)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to start bot: %v", err)
 	}
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to get updates: %v", err)
 	}
-	return bot, updates
+	t.updates = updates
+	t.bot = bot
+	return nil
 }
 
-func RunBot(client mqtt.Client) {
-	bot, updates := InitBot()
+func (t *TGBot) Run() {
 	cfg := config.GetConfig()
-	go func() {
-		log.Println("serving messages")
-		for msg := range mqtt_client.MessageCh {
-			_, err := bot.Send(msg)
-			if err != nil {
-				log.Println("error while sending message")
-			}
-		}
-	}()
 
-	for update := range updates {
-		c := &Command{
-			Bot:             bot,
-			Update:          update,
-			mqttGuardClient: client,
-			cfg:             cfg,
-		}
+	for update := range t.updates {
 		if chatID := update.Message.Chat.ID; chatID != cfg.ChatID {
-			log.Println(bot.Send(tgbotapi.NewMessage(chatID, "Unauthorized!")))
+			log.Println(t.bot.Send(tgbotapi.NewMessage(chatID, "Unauthorized!")))
 			continue
 		}
 		if update.Message == nil {
 			continue
 		}
 		if update.Message.IsCommand() {
+			c := &Command{
+				Bot:    t.bot,
+				Update: update,
+				cfg:    cfg,
+			}
 			switch update.Message.Command() {
 			case Picture:
 				c.takePicture()
-				break
 			case TurnOnAlarm:
 				c.turnOnAlarm()
-				break
 			case TurnOffAlarm:
 				c.turnOffAlarm()
-				break
 			}
 		}
 	}
+}
+
+func (t *TGBot) ServeChannel() {
+	eventHandler := EventHandler{}
+	log.Println("serving messages channel")
+	go func() {
+		for event := range EventCh {
+			msg, err := eventHandler.ServeEvent(event)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			_, err = t.bot.Send(msg)
+			if err != nil {
+				log.Println("error while sending message")
+			}
+		}
+	}()
 }
